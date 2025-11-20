@@ -1,0 +1,54 @@
+WITH KIMIA_FARMA_1 AS (
+  SELECT
+  f.transaction_id as transaction_id,
+  f.date as date_transaction,
+  k.branch_id as branch_id,
+  k.branch_name as branch_name,
+  k.kota as city,
+  k.provinsi as province,
+  k.rating as branch_rating,
+  f.rating as transaction_rating,
+  f.customer_name as customer_name,
+  f.discount_percentage as discount,
+  f.price as price,
+  f.price - f.discount_percentage as net_sales, 
+  CASE
+  WHEN f.price > 500000 THEN '30%'
+  WHEN f.price > 300000 AND f.price < 500000 THEN '25%'
+  WHEN f.price > 100000 AND f.price < 300000 THEN '20%'
+  WHEN f.price > 50000 AND f.price < 100000 THEN '15%'
+  ELSE '10%'
+  END AS gross_laba_percentage
+  FROM `my_project.kf_kantor_cabang` as k
+  LEFT JOIN `my_project.kf_final_transaction` as f  
+  ON k.branch_id = f.branch_id
+),
+KIMIA_FARMA_2 AS (
+  SELECT
+  i.branch_id as branch_id,
+  p.product_id as product_id,
+  p.product_name as product_name,
+  p.price as actual_price,
+  FROM `my_project.kf_inventory` as i  
+  LEFT JOIN `my_project.kf_product` as p  
+  ON i.product_id = p.product_id
+) 
+SELECT
+KIMIA_FARMA_1.transaction_id,
+KIMIA_FARMA_1.date_transaction,
+KIMIA_FARMA_1.branch_id,
+KIMIA_FARMA_1.branch_name,
+KIMIA_FARMA_1.customer_name,
+KIMIA_FARMA_2.product_id,
+KIMIA_FARMA_2.product_name,
+KIMIA_FARMA_1.city,
+KIMIA_FARMA_1.province,
+KIMIA_FARMA_1.branch_rating,
+KIMIA_FARMA_1.transaction_rating,
+KIMIA_FARMA_1.discount,
+KIMIA_FARMA_2.actual_price,
+KIMIA_FARMA_1.net_sales,
+(KIMIA_FARMA_1.net_sales * (CAST(REPLACE(KIMIA_FARMA_1.gross_laba_percentage, '%', '') AS FLOAT64) / 100.0)) AS gross_profit
+FROM KIMIA_FARMA_1
+LEFT JOIN KIMIA_FARMA_2 ON KIMIA_FARMA_1.branch_id = KIMIA_FARMA_2.branch_id
+ORDER BY 15 DESC;
